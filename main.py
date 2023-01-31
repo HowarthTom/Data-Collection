@@ -1,6 +1,8 @@
 import selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import requests
 import pandas as pd
@@ -28,8 +30,8 @@ class Scraper:
             accept_cookies_button = self.driver.find_element(by=By.XPATH, value='//*[@id="onetrust-accept-btn-handler"]')
             accept_cookies_button.click()
 
-        except Exception as e:
-            print(e)
+        except Exception as cookies_error:
+            print(cookies_error)
         
         self.tv_or_movies()
 
@@ -57,13 +59,18 @@ class Scraper:
     def get_data(self):
         title_cards = self.driver.find_elements(By.CLASS_NAME, 'js-tile-link')
         for element in title_cards:
-            img = element.find_element(By.CLASS_NAME, 'posterImage').get_attribute('currentSrc')
+            try:
+                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'posterImage')))
+                img = element.find_element(By.CLASS_NAME, 'posterImage').get_attribute('currentSrc')
+                print(img)
+            except Exception as locate_img_error:
+                print(locate_img_error)
+                continue
+
             title = element.find_element(By.CLASS_NAME, 'p--small').get_attribute('innerText')
             audience_score = element.find_element(By.TAG_NAME, 'SCORE-PAIRS').get_attribute('audiencescore')
             critic_score = element.find_element(By.TAG_NAME, 'SCORE-PAIRS').get_attribute('criticsscore')
             href = element.get_attribute('href')
-
-            print(title, img)
 
             dateTimeObj = datetime.now()
             timestamp = dateTimeObj.strftime("%d-%b-%Y (%H:%M:%S.%f)")
@@ -89,8 +96,7 @@ class Scraper:
         if self.tv_or_movie_selection == 'tv_show_data':
             try:
                 self.driver.find_element(By.CLASS_NAME, 'button--link js-clamp-toggle clamp-toggle__show-more').click()
-            except Exception as e:
-                #print(e)
+            except:
                 pass
             synopsis = self.driver.find_element(By.CSS_SELECTOR, '[class*="tv-series__series-info--synopsis clamp clamp-6 js-clamp"]').get_attribute('innerText')
             premiere_date = self.driver.find_element(By.XPATH, '//*[@id="detail_panel"]/div/table/tbody/tr[2]/td[2]').get_attribute('innerText')
@@ -115,11 +121,18 @@ class Scraper:
         file_path = f'raw_data/{self.tv_or_movie_selection}/{title}'
         if not os.path.exists(file_path):
             os.makedirs(file_path)
-        with open(f'{file_path}/data.json', 'w') as fp:
-            json.dump(obj=item, indent=4, fp=fp)
-        img_data = requests.get(img).content
-        with open(f'{file_path}/{title}.jpg', 'wb') as handler:
-            handler.write(img_data)
+        try:
+            with open(f'{file_path}/data.json', 'w') as fp:
+                json.dump(obj=item, indent=4, fp=fp)
+        except Exception as save_data_error:
+            print(save_data_error)
+        try:
+            print(title, img)
+            img_data = requests.get(img).content
+            with open(f'{file_path}/{title}.jpg', 'wb') as handler:
+                handler.write(img_data)
+        except Exception as save_img_error:
+            print(save_img_error)
         
             
         
