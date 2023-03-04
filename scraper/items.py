@@ -86,9 +86,16 @@ class Items:
         return title
 
     def get_scores(self):
-        scores = self.driver.find_elements(By.XPATH, '//span[@class= "mop-ratings-wrap__percentage"]')
-        tomatometer = scores[0].get_attribute('innerText')
-        audience_score = scores[1].get_attribute('innerText')
+        try:
+            tomatometer = self.driver.find_element(By.XPATH, '//span[@data-qa= "tomatometer"]').text
+        except:
+            tomatometer = 'N/A'
+            print(f'{self.get_title()}: no tomatometer data')
+        try:
+            audience_score = self.driver.find_element(By.XPATH, '//span[@data-qa= "audience-score"]').text
+        except:
+            audience_score = 'N/A'
+            print(f'{self.get_title()}: no audience-score data')
         return tomatometer, audience_score
 
     def get_synopsis(self):

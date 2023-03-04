@@ -53,7 +53,7 @@ class Saver:
     def save(self):
         Saver.save_item_dict(self)
         Saver.save_img(self)
-        print(f'{self.title} scraped successfully')
+        print(f'{self.title}: scraped successfully')
 
 
 if __name__ == '__main__':

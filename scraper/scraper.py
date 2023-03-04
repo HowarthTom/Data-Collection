@@ -76,7 +76,7 @@ class Scraper:
     def perform_scrape(self):
         Scraper.scrape_urls(self)
         print('Scraping show data')
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             executor.map(self.scrape_items, self.url_list)
 
         print(f'{len(self.url_list)} urls scraped')
