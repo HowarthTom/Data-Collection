@@ -166,6 +166,7 @@ class Items:
         Assigns and returns a uuid code for each TV show
     get_items()
         Calls the other methods and replaces the corresponding dictionary value with their return values, then returns the populated dictionary
+        Omits any incomplete dictionaries and instead returns None
     '''
 
     def __init__(self, driver):
@@ -191,25 +192,24 @@ class Items:
     
     def get_title(self):
         try:
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//h1[@class= "mop-ratings-wrap__title mop-ratings-wrap__title--top"]')))
             raw_text = self.driver.find_element(By.XPATH, '//h1[@class= "mop-ratings-wrap__title mop-ratings-wrap__title--top"]').get_attribute('innerText')
             underscores = raw_text.upper().replace(' ', '_')
             title = re.sub(r'[^a-zA-Z0-9_]', '', underscores)
         except:
-            print('Page not responding')
+            title = 'N/A'
         return title
 
     def get_scores(self):
         try:
-            tomatometer = self.driver.find_element(By.XPATH, '//span[@data-qa= "tomatometer"]').text
+            tomatometer_str = self.driver.find_element(By.XPATH, '//span[@data-qa= "tomatometer"]').text
+            tomatometer = int(tomatometer_str[:-1])
         except:
             tomatometer = 'N/A'
-            print(f'{self.get_title()}: no tomatometer data')
         try:
-            audience_score = self.driver.find_element(By.XPATH, '//span[@data-qa= "audience-score"]').text
+            audience_score_str = self.driver.find_element(By.XPATH, '//span[@data-qa= "audience-score"]').text
+            audience_score = int(audience_score_str[:-1])
         except:
             audience_score = 'N/A'
-            print(f'{self.get_title()}: no audience-score data')
         return tomatometer, audience_score
 
     def get_synopsis(self):
@@ -217,24 +217,39 @@ class Items:
             self.driver.find_element(By.XPATH, '//button[@data-qa= "more-btn"]').click()
         except:
             pass
-        synopsis_raw_text = self.driver.find_element(By.XPATH, '//div[@id= "movieSynopsis"]').get_attribute('innerText')
-        synopsis = str(BeautifulSoup(synopsis_raw_text, 'html.parser'))
+        try:
+            synopsis_raw_text = self.driver.find_element(By.XPATH, '//div[@id= "movieSynopsis"]').get_attribute('innerText')
+            synopsis = str(BeautifulSoup(synopsis_raw_text, 'html.parser'))
+        except:
+            synopsis = 'N/A'
         return synopsis
 
     def get_tv_network(self):
-        network = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-network"]').get_attribute('innerText')
+        try:
+            network = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-network"]').get_attribute('innerText')
+        except: 
+            network = 'N/A'
         return network
 
     def get_premiere_date(self):
-        premiere_date = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-premiere-date"]').get_attribute('innerText')
+        try:
+            premiere_date = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-premiere-date"]').get_attribute('innerText')
+        except:
+            premiere_date = 'N/A'   
         return premiere_date
 
     def get_genre(self):
-        genre = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-genre"]').get_attribute('innerText')
+        try:
+            genre = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-genre"]').get_attribute('innerText')
+        except:
+            genre = 'N/A'    
         return genre
 
     def get_img(self):
-        img = self.driver.find_element(By.XPATH, '//img[@class= "posterImage"]').get_attribute('currentSrc')
+        try:
+            img = self.driver.find_element(By.XPATH, '//img[@class= "posterImage"]').get_attribute('currentSrc')
+        except:
+            img = 'N/A'    
         return img
 
     def get_timestamp(self):
@@ -258,6 +273,10 @@ class Items:
         self.item_dict['Img'] = Items.get_img(self)
         self.item_dict['Timestamp'] = Items.get_timestamp(self)
         self.item_dict['ID'] = Items.get_uuid(self)
+        for key, value in self.item_dict.items():
+            if value == 'N/A':
+                print(f'{self.get_title()}: invalid {key} data, result omitted')
+                return None
         return self.item_dict
 
 
@@ -348,11 +367,13 @@ if __name__ == '__main__':
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+import concurrent.futures
+import time
+import sys
+sys.path.append('../scraper')
 from initialiser import Initialiser
 from items import Items
 from saver import Saver
-import concurrent.futures
-import time
 
 
 class Scraper:
@@ -381,7 +402,8 @@ class Scraper:
     scrape_items()
         Creates a chromedriver instance and visit a particular url from the url_list
         Instantiates the Items class and calls its get_items() method
-        Calls the save_data() method 
+        If a dictionary is returned, calls the save_data() method
+        If None is returned, exits the script and the incomplete data is not saved
     save_data()
         Instantiates the Saver class and calls its save() method
         Adds each item dictionary to the item_dict_list
@@ -411,9 +433,12 @@ class Scraper:
         driver.get(url)
         time.sleep(2)
         items = Items(driver)
-        item_dict = items.get_items()  
+        self.item_dict = items.get_items()  
         driver.quit()
-        self.save_data(item_dict)
+        if self.item_dict == None:
+            pass
+        else:
+            self.save_data(self.item_dict)
 
     def save_data(self, item_dict):
         save = Saver(item_dict)
@@ -428,10 +453,138 @@ class Scraper:
 
         print(f'{len(self.url_list)} urls scraped')
         print(f'{len(self.item_dict_list)} items saved')
-        print(f'{len(self.url_list) - len(self.item_dict_list)} non-responsive pages')
+        print(f'{len(self.url_list) - len(self.item_dict_list)} results omitted')
         print(f'{int((len(self.item_dict_list) / len(self.url_list)) * 100)}% scrape success rate')
 
 if __name__ == '__main__':
     scrape = Scraper()
     scrape.perform_scrape()
+```
+
+## Milestone 4 - Adding testing 
+
+* Unit tests were added to test each of the modules and ensure they were functioning as intended.
+* The InitialiserTestcase tests to make sure that the url_list is 150 items long (equal to the first 5 pages of results on rotten tomatoes), and that all the urls are valid links.
+
+```python
+import unittest
+import random
+import sys
+sys.path.append('../')
+from scraper.initialiser import Initialiser
+
+
+class InitialiserTestcase(unittest.TestCase):
+
+    def setUp(self):
+        initialiser = Initialiser()
+        self.url_list = initialiser.scrape()
+        random_index = random.randint(0, 150)
+        self.test_url = self.url_list[random_index]
+
+    def test_scrape(self):
+        self.assertEqual(len(self.url_list), 150)
+        self.assertIn('https://www.rottentomatoes.com/tv/', self.test_url)
+```
+
+* The ItemsTestcase opens a random link from the url_list and checks to make sure it is not an omitted result that had insufficient data. If this check passes, it tests to make sure the item_dict has been filled in correctly as expected.
+
+```python
+import unittest
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+import random
+import sys
+sys.path.append('../')
+from scraper.initialiser import Initialiser
+from scraper.items import Items
+
+
+class ItemsTestcase(unittest.TestCase):
+
+    def setUp(self):
+        options = Options()
+        options.headless = True
+        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        initialiser = Initialiser()
+        self.url_list = initialiser.scrape()
+        random_index = random.randint(0, 150)
+        self.test_url = self.url_list[random_index]
+        driver.get(self.test_url)
+        items = Items(driver)
+        self.item_dict = items.get_items()
+
+    def test_get_items(self):
+        if self.item_dict != None:
+            self.item_dict_values = self.item_dict.values()
+            self.assertNotIn('N/A', self.item_dict_values)
+```
+
+* The SaverTestcase uses a sample item_dict item and creates a temporary directory to mimic the file path the Saver class would use when saving an item locally. It tests to make sure the temporary directory is created and the files are saved correctly inside as expected.
+
+```python
+import unittest
+from unittest.mock import patch, mock_open
+import tempfile
+import os
+import sys
+sys.path.append('../')
+from scraper.saver import Saver
+
+class SaverTestcase(unittest.TestCase):
+
+    def setUp(self):
+        self.item_dict = {
+            "Title": "THE_LAST_OF_US",
+            "Tomatometer": 96,
+            "Audience Score": 90,
+            "Synopsis": "Joel and Ellie must survive ruthless killers and monsters on a trek across America after an outbreak.",
+            "TV Network": "HBO",
+            "Premiere Date": "Jan 15, 2023",
+            "Genre": "Action",
+            "Img": "https://resizing.flixster.com/T-YbkLxt3WvVPB2ZLnHUT8nYb68=/206x305/v2/https://resizing.flixster.com/2TwYzc7hklVW2s4fN1ypuyYWMj0=/ems.cHJkLWVtcy1hc3NldHMvdHZzZXJpZXMvYjBiZTZiODMtODQ1OC00MDY3LTkzNTItZjZlMzQ5ZGM1MzEwLmpwZw==",
+            "Timestamp": "06-Mar-2023 (15:34:08.470630)",
+            "ID": "846bdd65-d825-406f-8a36-895b1be8e152"
+        }
+        self.title = self.item_dict['Title']
+
+        self.temp_dirs = tempfile.TemporaryDirectory()
+        self.temp_file_path = os.path.abspath(f'{self.temp_dirs.name}/raw_data/{self.title}')
+        self.temp_file_path_dict = os.path.abspath(f'{self.temp_dirs.name}/raw_data/{self.title}/data.json')
+        self.temp_file_path_img = os.path.abspath(f'{self.temp_dirs.name}/raw_data/{self.title}/{self.title}.jpg')
+
+    def tearDown(self):
+        self.temp_dirs.cleanup()
+
+    def test_save(self):
+        save = Saver(self.item_dict)
+        save.file_path = self.temp_file_path
+        save.save()
+        self.assertTrue(os.path.isdir(self.temp_file_path))
+        self.assertTrue(os.path.isfile(self.temp_file_path_dict))
+        self.assertTrue(os.path.isfile(self.temp_file_path_img))
+```
+
+* The ScraperTestcase tests performs a mock scrape with all of the urls in the url_list. It checks that all of the urls are used to call the scrape_items method, and that each url is used exactly once. This is to ensure that the multithreading aspect of the Scraper class doesn't open multiple instances of the same url simultaneously.
+
+```python
+import unittest
+from unittest.mock import patch
+import sys
+sys.path.append('../')
+from scraper.scraper import Scraper
+
+
+class ScraperTestcase(unittest.TestCase):
+
+    def test_perform_scrape(self):
+        with patch.object(Scraper, 'scrape_items', return_value=None) as mock_scrape_items:
+            scrape = Scraper()
+            self.url_list = scrape.url_list
+            scrape.perform_scrape()
+            mock_scrape_items.assert_called()
+            self.assertEqual(mock_scrape_items.call_count, len(scrape.url_list))
+            urls_used = [args[0] for args in mock_scrape_items.call_args_list]
+            self.assertEqual(len(set(urls_used)), len(scrape.url_list))
 ```

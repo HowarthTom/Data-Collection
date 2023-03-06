@@ -52,6 +52,7 @@ class Items:
         Assigns and returns a uuid code for each TV show
     get_items()
         Calls the other methods and replaces the corresponding dictionary value with their return values, then returns the populated dictionary
+        Omits any incomplete dictionaries and instead returns None
     '''
 
     def __init__(self, driver):

@@ -36,7 +36,8 @@ class Scraper:
     scrape_items()
         Creates a chromedriver instance and visit a particular url from the url_list
         Instantiates the Items class and calls its get_items() method
-        Calls the save_data() method 
+        If a dictionary is returned, calls the save_data() method
+        If None is returned, exits the script and the incomplete data is not saved
     save_data()
         Instantiates the Saver class and calls its save() method
         Adds each item dictionary to the item_dict_list

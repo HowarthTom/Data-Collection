@@ -1,4 +1,6 @@
 import unittest
+from unittest.mock import patch, mock_open
+import tempfile
 import os
 import sys
 sys.path.append('../')
@@ -20,13 +22,19 @@ class SaverTestcase(unittest.TestCase):
             "ID": "846bdd65-d825-406f-8a36-895b1be8e152"
         }
         self.title = self.item_dict['Title']
-        self.file_path = os.path.abspath(f'../raw_data/{self.title}')
-        self.file_path_dict = os.path.abspath(f'../raw_data/{self.title}/data.json')
-        self.file_path_img = os.path.abspath(f'../raw_data/{self.title}/{self.title}.jpg')
-        save = Saver(self.item_dict)
-        save.save()
+
+        self.temp_dirs = tempfile.TemporaryDirectory()
+        self.temp_file_path = os.path.abspath(f'{self.temp_dirs.name}/raw_data/{self.title}')
+        self.temp_file_path_dict = os.path.abspath(f'{self.temp_dirs.name}/raw_data/{self.title}/data.json')
+        self.temp_file_path_img = os.path.abspath(f'{self.temp_dirs.name}/raw_data/{self.title}/{self.title}.jpg')
+
+    def tearDown(self):
+        self.temp_dirs.cleanup()
 
     def test_save(self):
-        self.assertTrue(os.path.exists(self.file_path))
-        self.assertTrue(os.path.exists(self.file_path_dict))
-        self.assertTrue(os.path.exists(self.file_path_img))
+        save = Saver(self.item_dict)
+        save.file_path = self.temp_file_path
+        save.save()
+        self.assertTrue(os.path.isdir(self.temp_file_path))
+        self.assertTrue(os.path.isfile(self.temp_file_path_dict))
+        self.assertTrue(os.path.isfile(self.temp_file_path_img))
