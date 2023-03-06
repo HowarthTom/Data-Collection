@@ -77,25 +77,24 @@ class Items:
     
     def get_title(self):
         try:
-            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//h1[@class= "mop-ratings-wrap__title mop-ratings-wrap__title--top"]')))
             raw_text = self.driver.find_element(By.XPATH, '//h1[@class= "mop-ratings-wrap__title mop-ratings-wrap__title--top"]').get_attribute('innerText')
             underscores = raw_text.upper().replace(' ', '_')
             title = re.sub(r'[^a-zA-Z0-9_]', '', underscores)
         except:
-            print('Page not responding')
+            title = 'N/A'
         return title
 
     def get_scores(self):
         try:
-            tomatometer = self.driver.find_element(By.XPATH, '//span[@data-qa= "tomatometer"]').text
+            tomatometer_str = self.driver.find_element(By.XPATH, '//span[@data-qa= "tomatometer"]').text
+            tomatometer = int(tomatometer_str[:-1])
         except:
             tomatometer = 'N/A'
-            print(f'{self.get_title()}: no tomatometer data')
         try:
-            audience_score = self.driver.find_element(By.XPATH, '//span[@data-qa= "audience-score"]').text
+            audience_score_str = self.driver.find_element(By.XPATH, '//span[@data-qa= "audience-score"]').text
+            audience_score = int(audience_score_str[:-1])
         except:
             audience_score = 'N/A'
-            print(f'{self.get_title()}: no audience-score data')
         return tomatometer, audience_score
 
     def get_synopsis(self):
@@ -103,24 +102,39 @@ class Items:
             self.driver.find_element(By.XPATH, '//button[@data-qa= "more-btn"]').click()
         except:
             pass
-        synopsis_raw_text = self.driver.find_element(By.XPATH, '//div[@id= "movieSynopsis"]').get_attribute('innerText')
-        synopsis = str(BeautifulSoup(synopsis_raw_text, 'html.parser'))
+        try:
+            synopsis_raw_text = self.driver.find_element(By.XPATH, '//div[@id= "movieSynopsis"]').get_attribute('innerText')
+            synopsis = str(BeautifulSoup(synopsis_raw_text, 'html.parser'))
+        except:
+            synopsis = 'N/A'
         return synopsis
 
     def get_tv_network(self):
-        network = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-network"]').get_attribute('innerText')
+        try:
+            network = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-network"]').get_attribute('innerText')
+        except: 
+            network = 'N/A'
         return network
 
     def get_premiere_date(self):
-        premiere_date = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-premiere-date"]').get_attribute('innerText')
+        try:
+            premiere_date = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-premiere-date"]').get_attribute('innerText')
+        except:
+            premiere_date = 'N/A'   
         return premiere_date
 
     def get_genre(self):
-        genre = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-genre"]').get_attribute('innerText')
+        try:
+            genre = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-genre"]').get_attribute('innerText')
+        except:
+            genre = 'N/A'    
         return genre
 
     def get_img(self):
-        img = self.driver.find_element(By.XPATH, '//img[@class= "posterImage"]').get_attribute('currentSrc')
+        try:
+            img = self.driver.find_element(By.XPATH, '//img[@class= "posterImage"]').get_attribute('currentSrc')
+        except:
+            img = 'N/A'    
         return img
 
     def get_timestamp(self):
@@ -144,6 +158,10 @@ class Items:
         self.item_dict['Img'] = Items.get_img(self)
         self.item_dict['Timestamp'] = Items.get_timestamp(self)
         self.item_dict['ID'] = Items.get_uuid(self)
+        for key, value in self.item_dict.items():
+            if value == 'N/A':
+                print(f'{self.get_title()}: invalid {key} data, result omitted')
+                return None
         return self.item_dict
 
 

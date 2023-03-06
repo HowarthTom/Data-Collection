@@ -1,11 +1,13 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+import concurrent.futures
+import time
+import sys
+sys.path.append('../scraper')
 from initialiser import Initialiser
 from items import Items
 from saver import Saver
-import concurrent.futures
-import time
 
 
 class Scraper:
@@ -64,9 +66,12 @@ class Scraper:
         driver.get(url)
         time.sleep(2)
         items = Items(driver)
-        item_dict = items.get_items()  
+        self.item_dict = items.get_items()  
         driver.quit()
-        self.save_data(item_dict)
+        if self.item_dict == None:
+            pass
+        else:
+            self.save_data(self.item_dict)
 
     def save_data(self, item_dict):
         save = Saver(item_dict)
@@ -81,7 +86,7 @@ class Scraper:
 
         print(f'{len(self.url_list)} urls scraped')
         print(f'{len(self.item_dict_list)} items saved')
-        print(f'{len(self.url_list) - len(self.item_dict_list)} non-responsive pages')
+        print(f'{len(self.url_list) - len(self.item_dict_list)} results omitted')
         print(f'{int((len(self.item_dict_list) / len(self.url_list)) * 100)}% scrape success rate')
 
 if __name__ == '__main__':
