@@ -1,6 +1,5 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -40,9 +39,12 @@ class Initialiser:
     '''
 
     def __init__(self, number_of_pages_to_scrape=4):
-        options = Options()
-        options.headless = True
-        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
         self.number_of_pages_to_scrape = number_of_pages_to_scrape
         self.url_list = []
 

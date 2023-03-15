@@ -1,5 +1,4 @@
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 import concurrent.futures
 import time
@@ -57,13 +56,12 @@ class Scraper:
         self.url_list = scrape_urls.scrape()
     
     def scrape_items(self, url):
-        options = Options()
-        options.headless = True
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-background-networking')
-        options.add_argument('--disable-default-apps')
-        options.add_argument('--disable-notifications')
-        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
         driver.get(url)
         time.sleep(2)
         items = Items(driver)
