@@ -1,0 +1,11 @@
+version: '20.10.23'
+
+services:
+  scraper_container:
+    build: .
+    ports:
+      - "5432:5432"
+    volumes:
+      - /Users/tom/Desktop/Data-Collection/Data-Collection/docker/raw_data:/app/raw_data
+    tty: true
+    stdin_open: true
