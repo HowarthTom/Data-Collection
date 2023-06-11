@@ -1,6 +1,5 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
@@ -39,12 +38,10 @@ class Initialiser:
     '''
 
     def __init__(self, number_of_pages_to_scrape=4):
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--disable-gpu')
-        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+        firefox_options = webdriver.FirefoxOptions()
+        firefox_options.add_argument('--window-size=1920,1080')
+        firefox_options.add_argument('--headless')
+        self.driver = webdriver.Firefox(options=firefox_options)
         self.number_of_pages_to_scrape = number_of_pages_to_scrape
         self.url_list = []
 
@@ -69,8 +66,11 @@ class Initialiser:
         title_cards = self.driver.find_elements(By.CLASS_NAME, 'js-tile-link')
         for title in title_cards:
             url = title.get_attribute('href')
+            if url == None:
+                url = title.find_element(By.XPATH, './/a[@data-qa= "discovery-media-list-item-caption"]').get_attribute('href')
+
+            print(url)
             self.url_list.append(url)
-        print('urls successfully scraped')
 
     def scrape(self):
         Initialiser.open_url(self)
@@ -82,11 +82,12 @@ class Initialiser:
             time.sleep(2)
         print(f'{n} pages loaded')
         Initialiser.get_urls(self)
+        print(f'{len(self.url_list)} urls successfully scraped')
         return self.url_list
 
 
 if __name__ == '__main__':
     initialise = Initialiser()
     initialise.scrape()
-    print(initialise.url_list)
+    #print(initialise.url_list)
     initialise.driver.quit()

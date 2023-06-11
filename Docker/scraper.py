@@ -1,5 +1,4 @@
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
 import concurrent.futures
 import time
 import sys
@@ -33,7 +32,7 @@ class Scraper:
     scrape_urls()
         Instantiates the Initialiser class, calls its scrape() method
     scrape_items()
-        Creates a chromedriver instance and visit a particular url from the url_list
+        Creates a webdriver instance and visit a particular url from the url_list
         Instantiates the Items class and calls its get_items() method
         If a dictionary is returned, calls the save_data() method
         If None is returned, exits the script and the incomplete data is not saved
@@ -56,17 +55,16 @@ class Scraper:
         self.url_list = scrape_urls.scrape()
     
     def scrape_items(self, url):
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--disable-gpu')
-        driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+        firefox_options = webdriver.FirefoxOptions()
+        firefox_options.add_argument('--window-size=1920,1080')
+        firefox_options.add_argument('--headless')
+        driver = webdriver.Firefox(options=firefox_options)
         driver.get(url)
-        time.sleep(2)
+        time.sleep(1)
         items = Items(driver)
         self.item_dict = items.get_items()  
         driver.quit()
+        time.sleep(1)
         if self.item_dict == None:
             pass
         else:

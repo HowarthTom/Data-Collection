@@ -1,7 +1,5 @@
 import unittest
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 import random
 import sys
 sys.path.append('../')
@@ -12,9 +10,10 @@ from scraper.items import Items
 class ItemsTestcase(unittest.TestCase):
 
     def setUp(self):
-        options = Options()
-        options.headless = True
-        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        firefox_options = webdriver.FirefoxOptions()
+        firefox_options.add_argument('--window-size=1920,1080')
+        firefox_options.add_argument('--headless')
+        driver = webdriver.Firefox(options=firefox_options)
         initialiser = Initialiser()
         self.url_list = initialiser.scrape()
         random_index = random.randint(0, 150)

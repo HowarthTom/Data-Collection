@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import time
 from datetime import datetime
 import uuid
@@ -69,13 +70,15 @@ class Items:
     
     def accept_cookies(self):
         try:
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="onetrust-accept-btn-handler"]')))
             self.driver.find_element(By.XPATH, '//*[@id="onetrust-accept-btn-handler"]').click()
+            time.sleep(1)
         except:
             pass   
     
     def get_title(self):
         try:
-            raw_text = self.driver.find_element(By.XPATH, '//h1[@class= "mop-ratings-wrap__title mop-ratings-wrap__title--top"]').get_attribute('innerText')
+            raw_text = self.driver.find_element(By.XPATH, '//p[@class= "scoreboard__title"]').text
             underscores = raw_text.upper().replace(' ', '_')
             title = re.sub(r'[^a-zA-Z0-9_]', '', underscores)
         except:
@@ -84,53 +87,54 @@ class Items:
 
     def get_scores(self):
         try:
-            tomatometer_str = self.driver.find_element(By.XPATH, '//span[@data-qa= "tomatometer"]').text
-            tomatometer = int(tomatometer_str[:-1])
+            tomatometer = self.driver.find_element(By.XPATH, '//SCORE-BOARD[@class= "scoreboard"]').get_attribute('tomatometerscore')
+            if tomatometer == '':
+                tomatometer = 'N/A'
         except:
             tomatometer = 'N/A'
         try:
-            audience_score_str = self.driver.find_element(By.XPATH, '//span[@data-qa= "audience-score"]').text
-            audience_score = int(audience_score_str[:-1])
+            audience_score = self.driver.find_element(By.XPATH, '//SCORE-BOARD[@class= "scoreboard"]').get_attribute('audiencescore')
+            if audience_score == '':
+                audience_score = 'N/A'
         except:
             audience_score = 'N/A'
         return tomatometer, audience_score
 
+
     def get_synopsis(self):
         try:
-            self.driver.find_element(By.XPATH, '//button[@data-qa= "more-btn"]').click()
+            self.driver.find_element(By.XPATH, '//button[@class= "button--link"]').click()
         except:
             pass
         try:
-            synopsis_raw_text = self.driver.find_element(By.XPATH, '//div[@id= "movieSynopsis"]').get_attribute('innerText')
+            synopsis_raw_text = self.driver.find_element(By.XPATH, '//p[@data-qa= "series-info-description"]').text
             synopsis = str(BeautifulSoup(synopsis_raw_text, 'html.parser'))
         except:
             synopsis = 'N/A'
         return synopsis
 
-    def get_tv_network(self):
+    def get_additional_show_data(self):
         try:
-            network = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-network"]').get_attribute('innerText')
-        except: 
+            list_items = self.driver.find_elements(By.XPATH, '//SECTION[@id="series-info"]/div/ul/li')
+            for item in list_items:
+                name = item.text.split(":")[0]
+                if name == 'TV Network':
+                    network = item.text.split(":")[1][1:]
+                if name == 'Premiere Date':
+                    premiere_date = item.text.split(":")[1][1:]
+                if name == 'Genre':
+                    genre = item.text.split(":")[1][1:]
+        except:
             network = 'N/A'
-        return network
+            premiere_date = 'N/A'
+            genre = 'N/A'
+        return network, premiere_date, genre
 
-    def get_premiere_date(self):
-        try:
-            premiere_date = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-premiere-date"]').get_attribute('innerText')
-        except:
-            premiere_date = 'N/A'   
-        return premiere_date
-
-    def get_genre(self):
-        try:
-            genre = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-genre"]').get_attribute('innerText')
-        except:
-            genre = 'N/A'    
-        return genre
 
     def get_img(self):
         try:
-            img = self.driver.find_element(By.XPATH, '//img[@class= "posterImage"]').get_attribute('currentSrc')
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//img[@data-qa= "poster-image"]')))
+            img = self.driver.find_element(By.XPATH, '//img[@data-qa= "poster-image"]').get_attribute('src')
         except:
             img = 'N/A'    
         return img
@@ -150,9 +154,9 @@ class Items:
         self.item_dict['Tomatometer'] = Items.get_scores(self)[0]
         self.item_dict['Audience Score'] = Items.get_scores(self)[1]
         self.item_dict['Synopsis'] = Items.get_synopsis(self)
-        self.item_dict['TV Network'] = Items.get_tv_network(self)
-        self.item_dict['Premiere Date'] = Items.get_premiere_date(self)
-        self.item_dict['Genre'] = Items.get_genre(self)
+        self.item_dict['TV Network'] = Items.get_additional_show_data(self)[0]
+        self.item_dict['Premiere Date'] = Items.get_additional_show_data(self)[1]
+        self.item_dict['Genre'] = Items.get_additional_show_data(self)[2]
         self.item_dict['Img'] = Items.get_img(self)
         self.item_dict['Timestamp'] = Items.get_timestamp(self)
         self.item_dict['ID'] = Items.get_uuid(self)
@@ -164,16 +168,13 @@ class Items:
 
 
 if __name__ == '__main__':
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--window-size=1920,1080')
-    chrome_options.add_argument('--headless')
-    chrome_options.add_argument('--disable-gpu')
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=chrome_options)
+    firefox_options = webdriver.FirefoxOptions()
+    firefox_options.add_argument('--window-size=1920,1080')
+    firefox_options.add_argument('--headless')
+    driver = webdriver.Firefox(options=firefox_options)
     test_url = 'https://www.rottentomatoes.com/tv/the_last_of_us'
     driver.get(test_url)
     time.sleep(2)
     items = Items(driver)
     item_dict = items.get_items()
     driver.quit()
-    print(item_dict)

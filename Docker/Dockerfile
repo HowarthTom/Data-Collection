@@ -1,17 +1,19 @@
 FROM python:3.10.2-slim-buster
 
+RUN apt-get update
+#install system depend
+RUN apt-get install -y software-properties-common
 
 # Disables buffering to allow continuous output
 ENV PYTHONBUFFERED 1
 
-# RUN apt-get update
-# RUN apt-get install -y wget
-# RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-# RUN apt-get install sudo
-# RUN sudo apt-get update
-# RUN sudo apt-get install -f
-# RUN apt-get install ./google-chrome-stable_current_amd64.deb
-
+# Install Firefox and GeckoDriver
+RUN apt-get update && apt-get install -y firefox-esr && apt-get install -y wget && \
+    wget -q "https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz" -O geckodriver.tgz && \
+    tar -xvzf geckodriver.tgz && \
+    chmod +x geckodriver && \
+    mv geckodriver /usr/local/bin/ && \
+    rm geckodriver.tgz
 
 # Creates the /app directory 
 RUN mkdir /app
