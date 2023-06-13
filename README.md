@@ -15,8 +15,6 @@ This project uses various webscraping and html parsing tools such as selenium, c
 ```python
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
@@ -55,9 +53,10 @@ class Initialiser:
     '''
 
     def __init__(self, number_of_pages_to_scrape=4):
-        options = Options()
-        options.headless = True
-        self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        firefox_options = webdriver.FirefoxOptions()
+        firefox_options.add_argument('--window-size=1920,1080')
+        firefox_options.add_argument('--headless')
+        self.driver = webdriver.Firefox(options=firefox_options)
         self.number_of_pages_to_scrape = number_of_pages_to_scrape
         self.url_list = []
 
@@ -82,8 +81,11 @@ class Initialiser:
         title_cards = self.driver.find_elements(By.CLASS_NAME, 'js-tile-link')
         for title in title_cards:
             url = title.get_attribute('href')
+            if url == None:
+                url = title.find_element(By.XPATH, './/a[@data-qa= "discovery-media-list-item-caption"]').get_attribute('href')
+
+            print(url)
             self.url_list.append(url)
-        print('urls successfully scraped')
 
     def scrape(self):
         Initialiser.open_url(self)
@@ -95,13 +97,14 @@ class Initialiser:
             time.sleep(2)
         print(f'{n} pages loaded')
         Initialiser.get_urls(self)
+        print(f'{len(self.url_list)} urls successfully scraped')
         return self.url_list
 
 
 if __name__ == '__main__':
     initialise = Initialiser()
     initialise.scrape()
-    print(initialise.url_list)
+    #print(initialise.url_list)
     initialise.driver.quit()
 ```
 
@@ -114,8 +117,6 @@ if __name__ == '__main__':
 ```python
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
@@ -186,13 +187,15 @@ class Items:
     
     def accept_cookies(self):
         try:
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//*[@id="onetrust-accept-btn-handler"]')))
             self.driver.find_element(By.XPATH, '//*[@id="onetrust-accept-btn-handler"]').click()
+            time.sleep(1)
         except:
             pass   
     
     def get_title(self):
         try:
-            raw_text = self.driver.find_element(By.XPATH, '//h1[@class= "mop-ratings-wrap__title mop-ratings-wrap__title--top"]').get_attribute('innerText')
+            raw_text = self.driver.find_element(By.XPATH, '//p[@class= "scoreboard__title"]').text
             underscores = raw_text.upper().replace(' ', '_')
             title = re.sub(r'[^a-zA-Z0-9_]', '', underscores)
         except:
@@ -201,53 +204,54 @@ class Items:
 
     def get_scores(self):
         try:
-            tomatometer_str = self.driver.find_element(By.XPATH, '//span[@data-qa= "tomatometer"]').text
-            tomatometer = int(tomatometer_str[:-1])
+            tomatometer = self.driver.find_element(By.XPATH, '//SCORE-BOARD[@class= "scoreboard"]').get_attribute('tomatometerscore')
+            if tomatometer == '':
+                tomatometer = 'N/A'
         except:
             tomatometer = 'N/A'
         try:
-            audience_score_str = self.driver.find_element(By.XPATH, '//span[@data-qa= "audience-score"]').text
-            audience_score = int(audience_score_str[:-1])
+            audience_score = self.driver.find_element(By.XPATH, '//SCORE-BOARD[@class= "scoreboard"]').get_attribute('audiencescore')
+            if audience_score == '':
+                audience_score = 'N/A'
         except:
             audience_score = 'N/A'
         return tomatometer, audience_score
 
+
     def get_synopsis(self):
         try:
-            self.driver.find_element(By.XPATH, '//button[@data-qa= "more-btn"]').click()
+            self.driver.find_element(By.XPATH, '//button[@class= "button--link"]').click()
         except:
             pass
         try:
-            synopsis_raw_text = self.driver.find_element(By.XPATH, '//div[@id= "movieSynopsis"]').get_attribute('innerText')
+            synopsis_raw_text = self.driver.find_element(By.XPATH, '//p[@data-qa= "series-info-description"]').text
             synopsis = str(BeautifulSoup(synopsis_raw_text, 'html.parser'))
         except:
             synopsis = 'N/A'
         return synopsis
 
-    def get_tv_network(self):
+    def get_additional_show_data(self):
         try:
-            network = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-network"]').get_attribute('innerText')
-        except: 
+            list_items = self.driver.find_elements(By.XPATH, '//SECTION[@id="series-info"]/div/ul/li')
+            for item in list_items:
+                name = item.text.split(":")[0]
+                if name == 'TV Network':
+                    network = item.text.split(":")[1][1:]
+                if name == 'Premiere Date':
+                    premiere_date = item.text.split(":")[1][1:]
+                if name == 'Genre':
+                    genre = item.text.split(":")[1][1:]
+        except:
             network = 'N/A'
-        return network
+            premiere_date = 'N/A'
+            genre = 'N/A'
+        return network, premiere_date, genre
 
-    def get_premiere_date(self):
-        try:
-            premiere_date = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-premiere-date"]').get_attribute('innerText')
-        except:
-            premiere_date = 'N/A'   
-        return premiere_date
-
-    def get_genre(self):
-        try:
-            genre = self.driver.find_element(By.XPATH, '//td[@data-qa= "series-details-genre"]').get_attribute('innerText')
-        except:
-            genre = 'N/A'    
-        return genre
 
     def get_img(self):
         try:
-            img = self.driver.find_element(By.XPATH, '//img[@class= "posterImage"]').get_attribute('currentSrc')
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.XPATH, '//img[@data-qa= "poster-image"]')))
+            img = self.driver.find_element(By.XPATH, '//img[@data-qa= "poster-image"]').get_attribute('src')
         except:
             img = 'N/A'    
         return img
@@ -267,9 +271,9 @@ class Items:
         self.item_dict['Tomatometer'] = Items.get_scores(self)[0]
         self.item_dict['Audience Score'] = Items.get_scores(self)[1]
         self.item_dict['Synopsis'] = Items.get_synopsis(self)
-        self.item_dict['TV Network'] = Items.get_tv_network(self)
-        self.item_dict['Premiere Date'] = Items.get_premiere_date(self)
-        self.item_dict['Genre'] = Items.get_genre(self)
+        self.item_dict['TV Network'] = Items.get_additional_show_data(self)[0]
+        self.item_dict['Premiere Date'] = Items.get_additional_show_data(self)[1]
+        self.item_dict['Genre'] = Items.get_additional_show_data(self)[2]
         self.item_dict['Img'] = Items.get_img(self)
         self.item_dict['Timestamp'] = Items.get_timestamp(self)
         self.item_dict['ID'] = Items.get_uuid(self)
@@ -281,16 +285,16 @@ class Items:
 
 
 if __name__ == '__main__':
-    options = Options()
-    options.headless = True
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+    firefox_options = webdriver.FirefoxOptions()
+    firefox_options.add_argument('--window-size=1920,1080')
+    firefox_options.add_argument('--headless')
+    driver = webdriver.Firefox(options=firefox_options)
     test_url = 'https://www.rottentomatoes.com/tv/the_last_of_us'
     driver.get(test_url)
     time.sleep(2)
     items = Items(driver)
     item_dict = items.get_items()
     driver.quit()
-    print(item_dict)
 ```
 
 * The saver class is used to save the dictionary locally as a JSON file, with the poster image saved seperately as a JPG file.
@@ -365,8 +369,6 @@ if __name__ == '__main__':
 
 ```python
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 import concurrent.futures
 import time
 import sys
@@ -400,7 +402,7 @@ class Scraper:
     scrape_urls()
         Instantiates the Initialiser class, calls its scrape() method
     scrape_items()
-        Creates a chromedriver instance and visit a particular url from the url_list
+        Creates a webdriver instance and visit a particular url from the url_list
         Instantiates the Items class and calls its get_items() method
         If a dictionary is returned, calls the save_data() method
         If None is returned, exits the script and the incomplete data is not saved
@@ -423,18 +425,16 @@ class Scraper:
         self.url_list = scrape_urls.scrape()
     
     def scrape_items(self, url):
-        options = Options()
-        options.headless = True
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-background-networking')
-        options.add_argument('--disable-default-apps')
-        options.add_argument('--disable-notifications')
-        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        firefox_options = webdriver.FirefoxOptions()
+        firefox_options.add_argument('--window-size=1920,1080')
+        firefox_options.add_argument('--headless')
+        driver = webdriver.Firefox(options=firefox_options)
         driver.get(url)
-        time.sleep(2)
+        time.sleep(1)
         items = Items(driver)
         self.item_dict = items.get_items()  
         driver.quit()
+        time.sleep(1)
         if self.item_dict == None:
             pass
         else:
@@ -492,8 +492,6 @@ class InitialiserTestcase(unittest.TestCase):
 ```python
 import unittest
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 import random
 import sys
 sys.path.append('../')
@@ -504,9 +502,10 @@ from scraper.items import Items
 class ItemsTestcase(unittest.TestCase):
 
     def setUp(self):
-        options = Options()
-        options.headless = True
-        driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+        firefox_options = webdriver.FirefoxOptions()
+        firefox_options.add_argument('--window-size=1920,1080')
+        firefox_options.add_argument('--headless')
+        driver = webdriver.Firefox(options=firefox_options)
         initialiser = Initialiser()
         self.url_list = initialiser.scrape()
         random_index = random.randint(0, 150)
@@ -525,7 +524,6 @@ class ItemsTestcase(unittest.TestCase):
 
 ```python
 import unittest
-from unittest.mock import patch, mock_open
 import tempfile
 import os
 import sys
@@ -587,4 +585,101 @@ class ScraperTestcase(unittest.TestCase):
             self.assertEqual(mock_scrape_items.call_count, len(scrape.url_list))
             urls_used = [args[0] for args in mock_scrape_items.call_args_list]
             self.assertEqual(len(set(urls_used)), len(scrape.url_list))
+```
+
+## Milestone 5 - Creating a Docker image
+
+* Various Docker files were created to containerise the scraper and allow for deployment across platforms. 
+* Firstly, a Dockerfile with the necessary components to build a docker image. This required massive restructuring of my code, as chromedriver and chromedrivermanager were incompatible. I changed the browser to firefox and used geckodriver instead.
+
+```dockerfile
+FROM python:3.10.2-slim-buster
+
+RUN apt-get update
+#install system depend
+RUN apt-get install -y software-properties-common
+
+
+# Install Firefox and GeckoDriver
+RUN apt-get update && apt-get install -y firefox-esr && apt-get install -y wget && \
+    wget -q "https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz" -O geckodriver.tgz && \
+    tar -xvzf geckodriver.tgz && \
+    chmod +x geckodriver && \
+    mv geckodriver /usr/local/bin/ && \
+    rm geckodriver.tgz
+
+# Creates the /app directory 
+RUN mkdir /app
+
+# Sets /app as the working directory
+WORKDIR /app
+
+# Copies required files to the directory
+COPY initialiser.py /app/
+COPY items.py /app/
+COPY saver.py /app/
+COPY scraper.py /app/
+COPY requirements.txt /app/
+
+# Installs the dependencies 
+RUN pip install -r requirements.txt
+
+# Disables buffering to allow continuous output
+ENV PYTHONBUFFERED 1
+
+# Sets the entrypoint when the dockerfile runs
+CMD ["python3", "scraper.py"]
+```
+
+* Next, a docker-compose file was created to automatically build the docker image.
+
+```yaml
+version: '20.10.23'
+
+services:
+  scraper_container:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rt_scraper
+    ports:
+      - "5432:5432"
+    volumes:
+      - /Users/tom/Desktop/Data-Collection/Data-Collection/docker/raw_data:/app/raw_data
+    tty: true
+    stdin_open: true
+```
+
+* Lastly, a CI/CD pipeline was created, which automatically pushes updates to dockerhub whenever a git push is made to the main repository, ensuring the docker image is up to date.
+
+```yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - 
+        name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - 
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - 
+        name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/rt_scraper
 ```

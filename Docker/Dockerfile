@@ -4,8 +4,6 @@ RUN apt-get update
 #install system depend
 RUN apt-get install -y software-properties-common
 
-# Disables buffering to allow continuous output
-ENV PYTHONBUFFERED 1
 
 # Install Firefox and GeckoDriver
 RUN apt-get update && apt-get install -y firefox-esr && apt-get install -y wget && \
@@ -30,6 +28,9 @@ COPY requirements.txt /app/
 
 # Installs the dependencies 
 RUN pip install -r requirements.txt
+
+# Disables buffering to allow continuous output
+ENV PYTHONBUFFERED 1
 
 # Sets the entrypoint when the dockerfile runs
 CMD ["python3", "scraper.py"]
