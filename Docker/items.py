@@ -36,12 +36,8 @@ class Items:
         Locates and returns the tomatometer and audience scores
     get_synopsis()
         Locates and clicks a button the show the full synopsis, formats the synopsis with the beautifulsoup html parser, then returns it
-    get_tv_network()
-        Locates and returns the TV network
-    get_premiere_date()
-        Locates and returns the premiere date
-    get_genre()
-        Locates and returns the genre
+    get_additional_show_data()
+        Locates the TV Network, Premiere date, and Genre listed for the show
     get_img()
         Locates and returns the poster img url
     get_timestamp()
@@ -78,7 +74,7 @@ class Items:
     
     def get_title(self):
         try:
-            raw_text = self.driver.find_element(By.XPATH, '//p[@class= "scoreboard__title"]').text
+            raw_text = self.driver.find_element(By.XPATH, '//h1[@class= "title"]').text
             underscores = raw_text.upper().replace(' ', '_')
             title = re.sub(r'[^a-zA-Z0-9_]', '', underscores)
         except:
@@ -87,13 +83,13 @@ class Items:
 
     def get_scores(self):
         try:
-            tomatometer = self.driver.find_element(By.XPATH, '//SCORE-BOARD[@class= "scoreboard"]').get_attribute('tomatometerscore')
+            tomatometer = self.driver.find_element(By.XPATH, '//score-board[@data-qa= "score-panel"]').get_attribute('tomatometerscore')
             if tomatometer == '':
                 tomatometer = 'N/A'
         except:
             tomatometer = 'N/A'
         try:
-            audience_score = self.driver.find_element(By.XPATH, '//SCORE-BOARD[@class= "scoreboard"]').get_attribute('audiencescore')
+            audience_score = self.driver.find_element(By.XPATH, '//score-board[@data-qa= "score-panel"]').get_attribute('audiencescore')
             if audience_score == '':
                 audience_score = 'N/A'
         except:
@@ -117,13 +113,13 @@ class Items:
         try:
             list_items = self.driver.find_elements(By.XPATH, '//SECTION[@id="series-info"]/div/ul/li')
             for item in list_items:
-                name = item.text.split(":")[0]
+                name = item.find_element(By.XPATH, './/b[@class="metal-label subtle"]').text
                 if name == 'TV Network':
-                    network = item.text.split(":")[1][1:]
+                    network = item.find_element(By.XPATH, './/span[@class="info-item-value"]').text
                 if name == 'Premiere Date':
-                    premiere_date = item.text.split(":")[1][1:]
+                    premiere_date = item.find_element(By.XPATH, './/span[@class="info-item-value"]').text
                 if name == 'Genre':
-                    genre = item.text.split(":")[1][1:]
+                    genre = item.find_element(By.XPATH, './/span[@class="info-item-value"]').text
         except:
             network = 'N/A'
             premiere_date = 'N/A'
