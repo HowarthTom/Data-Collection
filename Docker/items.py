@@ -111,15 +111,11 @@ class Items:
 
     def get_additional_show_data(self):
         try:
-            list_items = self.driver.find_elements(By.XPATH, '//SECTION[@id="series-info"]/div/ul/li')
+            list_items = self.driver.find_elements(By.XPATH, '//section[@data-qa="section:series-info"]/div/ul/li')
             for item in list_items:
-                name = item.find_element(By.XPATH, './/b[@class="metal-label subtle"]').text
-                if name == 'TV Network':
-                    network = item.find_element(By.XPATH, './/span[@class="info-item-value"]').text
-                if name == 'Premiere Date':
-                    premiere_date = item.find_element(By.XPATH, './/span[@class="info-item-value"]').text
-                if name == 'Genre':
-                    genre = item.find_element(By.XPATH, './/span[@class="info-item-value"]').text
+                network = item.find_element(By.XPATH, './/b[data-qa="series-details-network"]/following-sibling::span[@class="info-item-value"]').text
+                premiere_date = item.find_element(By.XPATH, './/span[@data-qa="series-details-premiere-date"]').text
+                genre = item.find_element(By.XPATH, './/span[@data-qa="series-details-genre"]').text
         except:
             network = 'N/A'
             premiere_date = 'N/A'

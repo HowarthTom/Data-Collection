@@ -3,7 +3,7 @@ version: '20.10.23'
 services:
   scraper_container:
     build:
-      context: .
+      context: /Users/tom/Desktop/Data-Collection/Data-Collection/docker
       dockerfile: Dockerfile
     image: rt_scraper
     ports:
