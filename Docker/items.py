@@ -108,14 +108,36 @@ class Items:
         except:
             synopsis = 'N/A'
         return synopsis
-
-    def get_additional_show_data(self):
+    
+    def get_tv_network(self):
         try:
-            list_items = self.driver.find_elements(By.XPATH, '//section[@data-qa="section:series-info"]/div/ul/li')
-            for item in list_items:
-                network = item.find_element(By.XPATH, './/b[data-qa="series-details-network"]/following-sibling::span[@class="info-item-value"]').text
-                premiere_date = item.find_element(By.XPATH, './/span[@data-qa="series-details-premiere-date"]').text
-                genre = item.find_element(By.XPATH, './/span[@data-qa="series-details-genre"]').text
+            network_loc = self.driver.find_element(By.XPATH, '//li[b[contains(text(), "TV Network:")]]/span[@class="info-item-value"]')
+            network = network_loc.text
+        except:
+            network = 'N/A'
+        return network
+    
+    def get_premiere_date(self):
+        try:
+            premiere_date = self.driver.find_element(By.XPATH, '//span[@data-qa="series-details-premiere-date"]').text
+        except:
+            premiere_date = 'N/A'
+        return premiere_date
+    
+    def get_genre(self):
+        try:
+            genre = self.driver.find_element(By.XPATH, '//span[@data-qa="series-details-genre"]').text
+        except:
+            genre = 'N/A'
+        return genre
+
+
+    #def get_additional_show_data(self):
+        try:
+            #network = driver.find_element(By.XPATH, "//b[data-qa='series-details-network']").text
+            network = 'Network'
+            premiere_date = driver.find_element(By.XPATH, '//span[@data-qa="series-details-premiere-date"]').text
+            genre = driver.find_element(By.XPATH, '//span[@data-qa="series-details-genre"]').text
         except:
             network = 'N/A'
             premiere_date = 'N/A'
@@ -146,9 +168,9 @@ class Items:
         self.item_dict['Tomatometer'] = Items.get_scores(self)[0]
         self.item_dict['Audience Score'] = Items.get_scores(self)[1]
         self.item_dict['Synopsis'] = Items.get_synopsis(self)
-        self.item_dict['TV Network'] = Items.get_additional_show_data(self)[0]
-        self.item_dict['Premiere Date'] = Items.get_additional_show_data(self)[1]
-        self.item_dict['Genre'] = Items.get_additional_show_data(self)[2]
+        self.item_dict['TV Network'] = Items.get_tv_network(self)
+        self.item_dict['Premiere Date'] = Items.get_premiere_date(self)
+        self.item_dict['Genre'] = Items.get_genre(self)
         self.item_dict['Img'] = Items.get_img(self)
         self.item_dict['Timestamp'] = Items.get_timestamp(self)
         self.item_dict['ID'] = Items.get_uuid(self)

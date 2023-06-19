@@ -225,18 +225,36 @@ class Items:
         except:
             synopsis = 'N/A'
         return synopsis
-
-    def get_additional_show_data(self):
+    
+    def get_tv_network(self):
         try:
-            list_items = self.driver.find_elements(By.XPATH, '//SECTION[@id="series-info"]/div/ul/li')
-            for item in list_items:
-                name = item.find_element(By.XPATH, './/b[@class="metal-label subtle"]').text
-                if name == 'TV Network':
-                    network = item.find_element(By.XPATH, './/span[@class="info-item-value"]').text
-                if name == 'Premiere Date':
-                    premiere_date = item.find_element(By.XPATH, './/span[@class="info-item-value"]').text
-                if name == 'Genre':
-                    genre = item.find_element(By.XPATH, './/span[@class="info-item-value"]').text
+            network_loc = self.driver.find_element(By.XPATH, '//li[b[contains(text(), "TV Network:")]]/span[@class="info-item-value"]')
+            network = network_loc.text
+        except:
+            network = 'N/A'
+        return network
+    
+    def get_premiere_date(self):
+        try:
+            premiere_date = self.driver.find_element(By.XPATH, '//span[@data-qa="series-details-premiere-date"]').text
+        except:
+            premiere_date = 'N/A'
+        return premiere_date
+    
+    def get_genre(self):
+        try:
+            genre = self.driver.find_element(By.XPATH, '//span[@data-qa="series-details-genre"]').text
+        except:
+            genre = 'N/A'
+        return genre
+
+
+    #def get_additional_show_data(self):
+        try:
+            #network = driver.find_element(By.XPATH, "//b[data-qa='series-details-network']").text
+            network = 'Network'
+            premiere_date = driver.find_element(By.XPATH, '//span[@data-qa="series-details-premiere-date"]').text
+            genre = driver.find_element(By.XPATH, '//span[@data-qa="series-details-genre"]').text
         except:
             network = 'N/A'
             premiere_date = 'N/A'
@@ -267,9 +285,9 @@ class Items:
         self.item_dict['Tomatometer'] = Items.get_scores(self)[0]
         self.item_dict['Audience Score'] = Items.get_scores(self)[1]
         self.item_dict['Synopsis'] = Items.get_synopsis(self)
-        self.item_dict['TV Network'] = Items.get_additional_show_data(self)[0]
-        self.item_dict['Premiere Date'] = Items.get_additional_show_data(self)[1]
-        self.item_dict['Genre'] = Items.get_additional_show_data(self)[2]
+        self.item_dict['TV Network'] = Items.get_tv_network(self)
+        self.item_dict['Premiere Date'] = Items.get_premiere_date(self)
+        self.item_dict['Genre'] = Items.get_genre(self)
         self.item_dict['Img'] = Items.get_img(self)
         self.item_dict['Timestamp'] = Items.get_timestamp(self)
         self.item_dict['ID'] = Items.get_uuid(self)
@@ -660,6 +678,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+
       - 
         name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -673,9 +695,20 @@ jobs:
 
       - 
         name: Build and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
-          context: .
+          context: ./Docker
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/rt_scraper
 ```
+
+## Conclusion
+
+* This project provided many challenges and hurdles, but also some great learning experiences. It was difficult to future proof the scraper against the constantly changing rotten tomatoes website layout, but in attempting to do so, the scraper has become more efficient and user friendly. 
+* The main takeaways from the project are: a deeper understanding of test-driven development; lots of experience with things like Selenium, Docker, github actions, HTML; refinement of coding practices such as DRY, clean, and well refactored code; and finally, lots of experience with identifying issues, researching answers, and implementing solutions.
+* If I were to further develop the project, I would upload the scraped data to Amazon S3, and design a GUI that allowed users to filter the data according to any of the parameters in the JSON dictionary. For example:
+    - TV Network = Netflix
+    - Genre = Horror
+    - Audience score = >90%
+    - Tomatometer score = <20%
+A filter like this would likely give you all the cult classic horror films, that critics hate but audiences love, that are available on Netflix. 
