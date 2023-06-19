@@ -36,8 +36,12 @@ class Items:
         Locates and returns the tomatometer and audience scores
     get_synopsis()
         Locates and clicks a button the show the full synopsis, formats the synopsis with the beautifulsoup html parser, then returns it
-    get_additional_show_data()
-        Locates the TV Network, Premiere date, and Genre listed for the show
+    get_tv_network()
+        Locates and returns the TV network the show is available on
+    get_premiere_date()
+        Locates and returns the premiere date for the show
+    get_genre()
+        Locates and returns the shows genre
     get_img()
         Locates and returns the poster img url
     get_timestamp()
@@ -130,20 +134,6 @@ class Items:
         except:
             genre = 'N/A'
         return genre
-
-
-    #def get_additional_show_data(self):
-        try:
-            #network = driver.find_element(By.XPATH, "//b[data-qa='series-details-network']").text
-            network = 'Network'
-            premiere_date = driver.find_element(By.XPATH, '//span[@data-qa="series-details-premiere-date"]').text
-            genre = driver.find_element(By.XPATH, '//span[@data-qa="series-details-genre"]').text
-        except:
-            network = 'N/A'
-            premiere_date = 'N/A'
-            genre = 'N/A'
-        return network, premiere_date, genre
-
 
     def get_img(self):
         try:

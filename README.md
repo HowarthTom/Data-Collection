@@ -1,17 +1,17 @@
 # Data Collection Pipeline
 
-This project uses various webscraping and html parsing tools such as selenium, chromedriver, beatifulsoup to collect and analyse data from the rottentomatoes website.
+This project uses various webscraping and html parsing tools such as selenium, geckodriver, beatifulsoup to collect and analyse data from the rottentomatoes website. It uses Docker to containerise the application for easy deployability, and a CI/CD pipeline to keep the Docker image up to date.
 
 ## Milestone 1 - Choosing a website 
 
-* I chose rotten tomatoes for this project as it contains lots of different forms of data (TV show info, images, links to other pages), which is updated and changed on a regular basis. 
+* Rotten tomatoes was chosen for this project as it contains lots of different forms of data (TV show info, images, links to other pages), which are updated and changed on a regular basis. 
 * This provides the challenge of making a webscraper that both targets specific data and adapts to change. 
-* Furthermore, the data collected from this website can be used to provide some interesting and useful information to the user, such as ranking by critic and audience scores simultaneously.
+* Furthermore, the data collected from this website can be used to provide some interesting and useful information for the user, such as ranking by tomatometer and audience scores simultaneously.
 
 ## Milestone 2 - Creating the initialiser class and methods
 
 * The initialiser class visits the 'TV show' page on rotten tomatoes and scrapes a list of urls for each show.
-    - The challenge was that sometimes it would load an incorrect number of pages if the 'load more' button was slow to load in. I solved this by adding a webdriver waitkey that waits for the presence of the button before trying to execute any more of the script.  
+    - The challenge was that sometimes it would load an incorrect number of pages if the 'load more' button was slow to load in. This was solved by adding a webdriver waitkey that waits for the presence of the button before trying to execute any more of the script.  
 ```python
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -111,8 +111,8 @@ if __name__ == '__main__':
 ## Milestone 3 - Creating the data handling classes and methods
 
 * The items class creates a dictionary of all the required data from each TV show page.
-    - Here I had to make use of the try: except: function, since a lot of the data was not consistent across each page. Some required a button click to reveal the whole synopsis, some didn't have enough data to provide a tomatometer score.
-    - I also discovered that the elements containing the scores required '.text' instead of 'get_attribute('innerText')' to get the data I wanted, even though 'get_attribute('innerText')' worked correctly for the other elements. This is because 'innerText' is not a standard HTML attribute and is explicitly defined, whereas the '.textContent' attribute is standard, and always returns the text attribute of an element, whether its defined as innerText or as something else such as outerText or textContent.
+    - Here, the try: except: function was required, since a lot of the data was not consistent across each page. Some required a button click to reveal the whole synopsis, some didn't have valid data for a particular dictionary key, and some had specific banners and advertisements on the page that altered the layout of the HTML.
+    - Also, some elements containing the scores required '.text' instead of 'get_attribute('innerText')' to get the correct data, even though 'get_attribute('innerText')' worked correctly for the other elements. This is because 'innerText' is not a standard HTML attribute and is explicitly defined, whereas the '.textContent' attribute is standard, and always returns the text attribute of an element, whether its defined as innerText or as something else such as outerText or textContent.
 
 ```python
 from selenium import webdriver
@@ -153,8 +153,12 @@ class Items:
         Locates and returns the tomatometer and audience scores
     get_synopsis()
         Locates and clicks a button the show the full synopsis, formats the synopsis with the beautifulsoup html parser, then returns it
-    get_additional_show_data()
-        Locates the TV Network, Premiere date, and Genre listed for the show
+    get_tv_network()
+        Locates and returns the TV network the show is available on
+    get_premiere_date()
+        Locates and returns the premiere date for the show
+    get_genre()
+        Locates and returns the shows genre
     get_img()
         Locates and returns the poster img url
     get_timestamp()
@@ -247,20 +251,6 @@ class Items:
         except:
             genre = 'N/A'
         return genre
-
-
-    #def get_additional_show_data(self):
-        try:
-            #network = driver.find_element(By.XPATH, "//b[data-qa='series-details-network']").text
-            network = 'Network'
-            premiere_date = driver.find_element(By.XPATH, '//span[@data-qa="series-details-premiere-date"]').text
-            genre = driver.find_element(By.XPATH, '//span[@data-qa="series-details-genre"]').text
-        except:
-            network = 'N/A'
-            premiere_date = 'N/A'
-            genre = 'N/A'
-        return network, premiere_date, genre
-
 
     def get_img(self):
         try:
@@ -604,7 +594,7 @@ class ScraperTestcase(unittest.TestCase):
 ## Milestone 5 - Creating a Docker image
 
 * Various Docker files were created to containerise the scraper and allow for deployment across platforms. 
-* Firstly, a Dockerfile with the necessary components to build a docker image. This required massive restructuring of my code, as chromedriver and chromedrivermanager were incompatible. I changed the browser to firefox and used geckodriver instead.
+* Firstly, a Dockerfile with the necessary components to build a docker image. This required massive restructuring of my code, as chromedriver and chromedrivermanager were incompatible with the Dockerfile. The browser was changed to firefox and geckodriver was used instead, which fixed the issue.
 
 ```dockerfile
 FROM python:3.10.2-slim-buster
@@ -664,7 +654,7 @@ services:
     stdin_open: true
 ```
 
-* Lastly, a CI/CD pipeline was created, which automatically pushes updates to dockerhub whenever a git push is made to the main repository, ensuring the docker image is up to date.
+* Lastly, a CI/CD pipeline was created, which automatically pushes updates to Dockerhub whenever a git push is made to the main repository, ensuring the docker image is up to date.
 
 ```yml
 name: CI/CD Pipeline
