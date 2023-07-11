@@ -701,4 +701,4 @@ jobs:
     - Genre = Horror
     - Audience score = >90%
     - Tomatometer score = <20%
-A filter like this would likely give you all the cult classic horror films, that critics hate but audiences love, that are available on Netflix. 
+* A filter like this would likely give you all the cult classic horror films, that critics hate but audiences love, that are available on Netflix. 
